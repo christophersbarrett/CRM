@@ -1,1 +1,2 @@
-These files are just code examples from the Commodities Risk Management project - a RIA that simulates the commodities market.
+These files are just code examples from the Commodities Risk Management project - a RIA that simulates the commodities market.  In the controllers folder is an example
+of a controller implemented in Zend Framework.  In the views folder is the main user interface code for the project, implemented with PHP, HTML and a whole of dojo toolkit goodness.
