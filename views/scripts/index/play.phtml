@@ -1,0 +1,627 @@
+
+<?php
+$this->dojo()->enable();
+$this->inlineScript()->captureStart(); 
+$crap = $this->real;
+?>
+
+<?php $this->inlineScript()->captureEnd();?>
+<style type="text/css">
+    <!--
+    @import "/js/dojo-1.5.0-src/dijit/themes/tundra/tundra.css";
+    @import "/js/dojo-1.5.0-src/dojox/grid/resources/Grid.css";
+    @import "/js/dojo-1.5.0-src/dojox/grid/resources/tundraGrid.css";
+    @import "/js/dojo-1.5.0-src/dojo/resources/dojo.css";
+
+    -->
+    .tundra .dojoxGridRowOver .dojoxGridCell {
+        background-color: #fff;
+        color:#000;
+    }
+
+    .tundra .dojoxGridRowOver .dojoxGridCell .dijit {
+        color: #000;
+    }
+
+</style>
+<div style="height:680px; width:980px; margin-left: auto; margin-right: auto ;border: 10px solid;  -moz-border-radius: 15px; -webkit-border-radius: 15px;" id="main-container" dojoType="dijit.layout.BorderContainer">
+    <div id="titlePane" region="top" style="background: grey; height:100px; width:700px; margin-left:10px;" dojoType="dijit.layout.ContentPane">The News!</div>
+
+    <div id="currentPane" region="top" style=" height:100px; width:200px; margin-left:730px;" dojoType="dijit.layout.ContentPane">
+        <div id="today" > <?php echo $this->today; ?> </div>
+        <?php echo "<br/>";
+        echo $this->profileName;
+        ?>
+    </div>
+
+    <div style="height:350px; width:700px; margin-top:125px; margin-left:10px; border: 0px solid; -moz-border-radius: 15px; -webkit-border-radius: 15px;" id="mainPane" dojoType="dijit.layout.ContentPane">
+        <div  id="marketTabs" style="height:100%; width:100%;" dojoType="dijit.layout.TabContainer" doLayout="false" useSlider="false" useMenu="false">
+            <div style="background-color: white; height:300px;" id="Jan" region="top" title="Jan" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Feb" region="top" title="Feb" dojoType="dijit.layout.ContentPane" selected ="true"></div>
+            <div style="background-color: white; height:300px;" id="Mar" region="top" title="Mar" dojoType="dijit.layout.ContentPane" ></div>
+            <div style="background-color: white; height:300px;" id="Apr" region="top" title="Apr" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="May" region="top" title="May" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Jun" region="top" title="Jun" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Jul" region="top" title="Jul" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Aug" region="top" title="Aug" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Sep" region="top" title="Sep" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Oct" region="top" title="Oct" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Nov" region="top" title="Nov" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Dec" region="top" title="Dec" dojoType="dijit.layout.ContentPane"></div>
+            <div style="background-color: white; height:300px;" id="Cash" region="top" title="Cash" dojoType="dijit.layout.ContentPane"></div>
+        </div>
+    </div>
+    <div id="pendingPane" region="right" style="height:340px; width:230px; margin-top:0px; border: 0px solid; -moz-border-radius: 15px; -webkit-border-radius: 15px; position: " dojoType="dijit.layout.ContentPane">
+        <div id="pendingGridPane" dojoType="dijit.layout.ContentPane" region="top" style="height:300px;"></div>
+        <div id ="pendingTotal" dojoType="dijit.layout.ContentPane" >
+
+            <div id="marginTotal" style="text-align:right;" dojoType="dijit.layout.ContentPane" region="right">Margin Change: $0.00</div>
+        </div>
+
+    </div>
+
+    <div style="height:175px;  margin-top:5px; margin-left:10px;" dojoType="dijit.layout.BorderContainer" id="bottomPane" region="bottom">
+        <div style=" width:700px;  border: 0px solid; -moz-border-radius: 15px; -webkit-border-radius: 15px;" id="positionPane" region="left" dojoType="dijit.layout.ContentPane"></div>
+        <div style=" width:230px;  margin-left:10px; border: 0px solid; -moz-border-radius: 15px; -webkit-border-radius: 15px;" region="right" id="buttonPane" dojoType="dijit.layout.ContentPane">
+            <button id="executeBtn" dojoType="dijit.form.Button" type="button"> Execute </button>
+            <button id="balanceBtn" dojoType="dijit.form.Button" type="button"> Balance Sheet </button>
+            <button id="transactionBtn" dojoType="dijit.form.Button" type="button"> Transaction Log </button>
+        </div>
+    </div>
+
+</div>
+<script type="text/javascript">
+    //<![CDATA[
+    dojo.require("dojo.data.ItemFileWriteStore");
+    dojo.require("dojox.data.AndOrWriteStore");
+    dojo.require("dojo.currency");
+    dojo.require("dijit.layout.ContentPane");
+    dojo.require("dojox.grid.DataGrid");
+    dojo.require("dijit.dijit");
+    dojo.require("dijit.Dialog");
+    dojo.require("dojox.grid.cells.dijit");
+    dojo.require("dijit.layout.TabContainer");
+    dojo.require("dijit.layout.BorderContainer");
+    dojo.require("dojo.parser");
+    dojo.require('dijit.form.NumberTextBox');
+    var chartWindow = null; //global scope for the chart window
+    dojo.addOnLoad(function() {
+        dojo.parser.parse();
+        //var query = "{!(shortForm:0 AND longForm:0)}";
+        var offset = <?php echo $this->offset; ?>;
+        var marketTabs = null;
+
+        var positionGrid = null;
+        var marketGrid = null;
+        var pendingGrid = null;
+        var totalMargin = 0;
+        var positionStore = new dojo.data.ItemFileWriteStore({url:"/data/getfuturesposition"});
+        var store = new dojox.data.AndOrWriteStore({url:"/data/getmarket"});
+        function formatLong(value)
+        {
+            return value;
+        }
+
+        function formatShort(value)
+        {
+            return value;
+        }
+        function formatPrimary(value)
+        {
+            //dojo.query('.dojoxGridMasterHeader').style('display', 'none');
+            //dojo.query('.dojoxGrid').style('backgroundColor','white');
+            return value;
+        }
+        function formatName(item)
+        {
+            var commName = store.getValue(item,"commodity");
+            var monthName = store.getValue(item,"monthName");
+            var name = monthName + " " + commName;
+
+            return name;
+        }
+        chart = function(commodityId,monthId){
+            if(chartWindow == null) {
+                var url = "/graph/all/commodityId/"+commodityId+"/monthId/"+monthId;
+                chartWindow =  window.open(url,'chart');
+                handle = dojo.connect(chartWindow, 'onbeforeunload', function(){
+                    console.log('Window closed');
+                    dojo.disconnect(handle);
+                    chartWindow = null;
+                });
+            }
+            else
+            {
+                chartWindow.addSeries(commodityId,monthId);
+            }
+
+
+        }
+        function formatChart(item)
+        {
+            //console.log("formatChart");
+            var month = store.getValue(item,"month");
+            var commodityId = store.getValue(item,"commodityId");
+
+
+            var html = "<img src='../sparkline.jpg' onclick=\"chart("+commodityId+","+month+");\" style='height:20px;width:80%;'>";
+            return html;
+
+        }
+
+
+        function formatPrice(value)
+        {
+            return dojo.currency.format(value, {currency: "USD"});
+
+        }
+
+        function formatReturn(value) {
+            return dojo.currency.format(value, {currency: "USD"});
+        }
+
+        function formatPositionPrice(item) {
+            var quantity = positionStore.getValue(item, "quantity");
+            var price = positionStore.getValue(item,"price");
+            if(price != 'Total')
+            {
+                price = dojo.currency.format(price, {currency: "USD"});
+                value = quantity + " @ " + price;
+            }
+            else
+            {
+                value = price;
+            }
+
+            return value;
+        }
+
+        function execute() {
+            //move to the next day and refresh all the ui elements
+            console.log("in execute");
+            //need to refresh all the grids, as well as the virtual date display
+            if(offset%252 == 0)
+            {
+                //creating the layout for the dialog
+                var eoyBC = new dijit.layout.BorderContainer({style:'height:400px;width:100%;'});
+                var transCP = new dijit.layout.ContentPane({region:'center'});
+                var eoyCP = new dijit.layout.ContentPane({region:'top', style:"height:50px;"});
+                var btnCP = new dijit.layout.ContentPane({region:'bottom',style:"height:50px; text-align:right;"});
+                var button = new dijit.form.Button({
+                    label: "Continue",
+                    onClick: function() {
+                        EOYDlg.hide();
+                    }
+                });
+                btnCP.set("content",button);
+                var eoyDiv = dojo.create("div");
+                
+                var eoyStore = new dojo.data.ItemFileReadStore({url:"/data/geteoy",clearOnClose:true,urlPreventCache:true});
+                var eoyLayout = [{field:"year", width:"25%",name: "Year"},
+                    {field:"return", width:"25%",formatter:formatPrice,name: "ROI"},
+                    {field:"baseline", width:"25%", formatter: formatPrice,name: "Baseline"},
+                    {field:"difference", width:"25%", formatter:formatDiff, name: "Difference"}
+                ];
+                var eoyGrid = new dojox.grid.DataGrid({selectionMode:"none", style:"height: 40px;",store:null,escapeHTMLInData:"false",structure:eoyLayout},eoyDiv);
+                eoyCP.set("content",eoyGrid);
+                
+                var transLayout = [{field:"date",formatter: formatTradingDate, width:"10%",name: "Date"},
+                    {field:"transaction", width:"10%",name: "Transaction Type"},
+                    {field:"commodity", width:"10%",name: "Commodity"},
+                    {field:"month", width:"10%",name: "Month"},
+                    {field:"position", width:"10%",name: "Position"},
+                    {field:"quantity", width:"10%",name: "Quantity"},
+                    {field:"price",formatter: formatPrice, width:"10%",name: "Price"},
+                    {field:"total",formatter: formatPrice, width:"10%",name: "Total"}
+                ];
+                var transGrid2 = new dojox.grid.DataGrid({selectionMode:"none", style:"height: 300px; width: 100%;",clientSort:false,
+                    store:null,escapeHTMLInData:"false",id:"tranGrid2",structure:transLayout},transDiv);
+                var transStore = new dojo.data.ItemFileReadStore({url:"/data/gettransactionlog",clearOnClose:true,urlPreventCache:true});
+                transCP.set("content",transGrid2);
+               
+                eoyBC.addChild(transCP);
+                eoyBC.addChild(eoyCP);
+                eoyBC.addChild(btnCP);
+               
+                eoyBC.startup();
+                var EOYDlg = new dijit.Dialog({
+                    title: "End of Year",
+                    style: "width: 500px"
+                });
+                EOYDlg.set("content", eoyBC);
+                EOYDlg.show();
+                transGrid2.setStore(transStore);
+                eoyGrid.setStore(eoyStore);
+
+                var conn = dojo.connect(EOYDlg,"hide", function(){
+                    EOYDlg.destroyRecursive();
+                    console.log("destroying");
+                    dojo.disconnect(conn);
+                }
+                );
+            }
+
+
+            positionStore = new dojo.data.ItemFileWriteStore({url:"/data/getfuturesposition"});
+            store = new dojox.data.AndOrWriteStore({url:"/data/getmarket"});
+            var query = {month: 1};
+            marketGrid.setStore(store,query);
+            positionGrid.setStore(positionStore);
+            query = "{!(shortForm:0 AND longForm:0)}";
+            pendingGrid.setStore(store,query);
+            marketTabs.selectChild("Jan");
+
+            //need to update the displayed date...
+            offset++;
+            var tradingDate = formatTradingDate(offset);
+            var today = dojo.byId("today");
+            today.innerHTML = tradingDate;
+            dojo.connect(store, "onSet", function(){
+                // console.log("store onSet is being called after execute");
+                pendingGrid.render();
+            });
+            formatObj.store = store;
+            formatObj.updateMarginTotal(0);
+            if(chartWindow != null) {
+                chartWindow.updateData();
+            }
+
+            transStore = new dojo.data.ItemFileReadStore({url:"/data/gettransactionlog",clearOnClose:true,urlPreventCache:true});
+            balanceStore = new dojo.data.ItemFileReadStore({url:"/data/getbalancesheet",clearOnClose:true,urlPreventCache:true});
+            console.debug(transGrid);
+            transGrid.setStore(transStore);
+            balanceGrid.setStore(balanceStore);
+
+            //balanceStore.close();
+            // balanceStore.fetch();
+            //transStore.close();
+            // transStore.fetch();
+            // transBool = false;
+            //balBool=false;
+            //balanceGrid._refresh();
+            //transGrid.render();
+            //transGrid.startup();
+
+        }
+
+        function formatTradingDate( offset ) {
+            
+            var year = Math.floor( offset / 252 ) + 1;
+            offset = offset % 252;
+            var month = Math.floor( offset / 21 ) + 1;
+            var day = (offset % 21) + 1;
+            return month + "/" + day + "/" + year;
+        }
+
+        function formatDiff(value)
+        {
+            var val = (value < 0 ? '-' : '+') + Math.abs(value) + '%';
+            return val;
+        }
+
+        function executeError(error) {
+            // console.log("in executeError");
+
+            console.log("error: " + error);
+        }
+
+        function formatPosition(value) {
+            return value;
+        }
+
+        function formatMargin(value) {
+            return dojo.currency.format(value, {currency: "USD"});
+        }
+
+
+        dojo.declare("dojox.grid.formatterScopeObj", null, {
+            store: null,
+            margins: {},
+            totalMargin: 0,
+            constructor: function(kwArgs){
+
+                this.store = kwArgs.store;
+                //this.margins = [];
+                this.totalMargin = 0;
+            },
+            fmtBuySell: function(item) {
+                var long1 = store.getValue(item,"longForm");
+                var short1 = store.getValue(item,"shortForm");
+                var val = long1 - short1;
+                if(val > 0) {
+                    return "B";
+                }
+                else {
+                    return "S";
+                }
+            },
+            determinePosition: function(pendingItem,pendingMargin){
+                //console.log("in determinePosition 1: ");
+
+                var identity = this.store.getIdentity(pendingItem);
+                var pendingPosition = this.fmtBuySell(pendingItem);//should be a B or S
+                // var pendingMargin = store.getValue(pendingItem, "marginReq");
+
+                var gotItem = function(item)
+                {
+                    if(item == null)
+                    {
+                        //console.log("item is null: "+pendingMargin);
+                        return;
+                    }
+                    var position = positionStore.getValue(item,"position");
+
+                    if(position == "Long" && pendingPosition == "S" || position == "Short" && pendingPosition == "B")
+                    {
+                        pendingMargin *= -1;//as in a reduction in margin
+                        //console.log("in determinePosition 3: " + pendingMargin);
+                    }
+                };
+                positionStore.fetchItemByIdentity({identity: identity, onItem: gotItem});
+                // console.log("in determinePosition 5: "+pendingMargin);
+                return pendingMargin;
+            },
+            updateMarginTotal: function(margin) {
+
+                if(typeof(margin)!== 'undefined')
+                {
+                    // console.log("setting new margin");
+                    this.totalMargin = margin;
+                }
+                var total = "Margin Change: " + dojo.currency.format(this.totalMargin, {currency: "USD"});
+                dijit.byId("marginTotal").set("content",total);
+            },
+            fmtMargin: function(item){
+                //console.log("inside formatObj fmtMargin");
+                // console.debug(item);
+
+                var identity = this.store.getIdentity(item);
+                var margin = 0;
+                var long1 = this.store.getValue(item,"longForm");
+                var short1 = 0;
+                short1 -= this.store.getValue(item,"shortForm");
+                var amount = short1 + long1;
+                if(!this.margins[identity]){
+                    //console.log("inside if statement should only show once!!!!");
+
+                    margin = this.store.getValue(item, "margin");
+                    var marginReq = margin * Math.abs(amount);
+                    // console.log("marginReq", marginReq);
+                    if(amount != 0)
+                    {
+                        this.margins[identity] = amount;
+                        marginReq = this.determinePosition(item,marginReq);
+                    }
+                    this.store.setValue(item, "marginReq", marginReq);
+                    this.totalMargin +=marginReq;
+                    this.updateMarginTotal();
+                }
+                else
+                {
+                    if(this.margins[identity]==amount)
+                    {//nothing changed
+                        // console.log("nothing changed");
+                        // console.debug(this.margins);
+                        margin = this.store.getValue(item,'marginReq');
+                    }
+                    else
+                    {//something has changed, need to rerun calculations
+                        //console.log("need to rerun calcs");
+                        //console.debug(this.margins);
+                        var margin = this.store.getValue(item,"marginReq");
+
+                        margin2 = this.totalMargin - margin;
+
+                        this.updateMarginTotal(margin2);
+                        delete this.margins[identity];
+
+                        this.fmtMargin(item);
+                    }
+
+                }
+                //console.log("margins: ", this, this.margins, identity, this.margins[identity]);
+                return dojo.currency.format(margin, {currency: "USD"});
+            },
+            fmtCommodity: function(item)
+            {
+                //for (var i in console) { console.log(i, console[i]); }
+                if(this.store !== store)
+                {
+                    console.log("stores do not match!  ");
+                }
+                var long1 = this.store.getValue(item,"longForm");
+                var short1 = 0;
+                short1 -= this.store.getValue(item,"shortForm");
+                var commodity = this.store.getValue(item,"commodity");
+
+                var month = this.store.getValue(item,"monthName");
+                if(month != "Cash"){
+                    month = month.substring(0,3);
+                }
+                var amount = short1 + long1;
+                return amount + " " + month + " " + commodity;
+            },
+            fmtItem: function(value, idx){
+                if(!this.store.isItem(value)){
+                    return "&nbsp;";
+                }
+
+            }
+        });
+
+
+        var marketLayout = [{
+                defaultCell: { width: 8, editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: right;'  },
+                rows: [
+                    {field:"_item",formatter:formatName,width:"20%",name:"Commodity",editable:false},
+                    {field:"_item",formatter:formatChart,width:"10%",name:"Trend",editable:false},
+                    {field:"price",formatter:formatPrice,width:"10%",name:"Price",editable:false},
+                    {field:"priceChange",formatter:formatMargin,width:"10%",name:"Price Change",editable:false},
+                    {field:"volume",formatter:formatPrimary,width:"10%",name:"Market Volume",editable:false},
+                    {field:"oi",formatter:formatPrimary,width:"10%",name:"Open Interest",editable:false},
+                    {field:"longForm",formatter:formatLong,width:"10%",widgetClass: dijit.form.NumberTextBox,name:"Buy"},
+                    {field:"shortForm",formatter:formatShort,width:"10%",widgetClass: dijit.form.NumberTextBox,name:"Sell"}]
+            }];
+        var positionLayout = [
+            {field:"commodity",formatter:formatPrimary,width:"10%",name:"Commodity"},
+            {field:"position",formatter:formatPosition,width:"10%",name:"Position"},
+            {field:"_item",formatter:formatPositionPrice,width:"10%",name:"Contracts @ Price"},
+            {field:"return",formatter:formatReturn,width:"10%",name:"Return to Date"},
+            {field:"margin",formatter:formatMargin,width:"10%",name:"Margin Required"},
+            {field:"mm",formatter:formatMargin,width:"10%",name:"Money Market"},
+            {field:"assets",formatter:formatMargin,width:"10%",name:"Total Assets"}
+        ];
+
+        var pendingLayout = [{field:"_item",formatter: "fmtBuySell", width:"10%",name: "B/S"},
+            {field:"_item",formatter: "fmtCommodity", width:"10%",name: "Commodity"},
+            {field:"_item",formatter: "fmtMargin", width:"10%",name: "Margin"}
+        ];
+
+
+
+
+        var formatObj = new dojox.grid.formatterScopeObj({store:store});
+        var n = dojo.create("div");
+        //dojo.byId("Jan").appendChild(n);
+        marketGrid = new dojox.grid.DataGrid({selectionMode:"none",style:"height: 300px; width: 90%;",store:store,escapeHTMLInData:"false", query: "{month: 1}",
+            id:"marketGrid",structure:marketLayout}, n);
+        //marketGrid.render();
+        var jan = dijit.byId("Jan");
+        jan.set("content",marketGrid);
+        marketGrid.startup();
+
+        marketTabs = dijit.byId("marketTabs");
+        marketTabs.selectChild(jan);
+
+        var pos = dojo.create("div");
+        //dojo.byId("positionPane").appendChild(pos);
+        positionGrid = new dojox.grid.DataGrid({selectionMode:"none",style:"height: 300px; width: 100%;",store:positionStore,escapeHTMLInData:"false",autoHeight:false,id:"position",structure:positionLayout},pos);
+        dijit.byId("positionPane").set('content',positionGrid);
+        positionGrid.startup();
+
+        var pos3 = dojo.create("div");
+        //dojo.byId("pendingPane").appendChild(pos3);
+        pendingGrid = new dojox.grid.DataGrid({selectionMode:"none",formatterScope: formatObj,query:"{!(shortForm:0 AND longForm:0) AND !price:0}", style:"height: 300px; width: 100%;",
+            store:store,escapeHTMLInData:"false",id:"pendGrid",structure:pendingLayout},pos3);
+        dijit.byId("pendingGridPane").set("content",pendingGrid);
+        pendingGrid.startup();
+
+
+
+        dojo.subscribe("marketTabs-selectChild", function(newTab){
+            //console.log("new tab selected");
+            newTab.set('content', marketGrid);//sets the grid as the content of the tab
+            index = marketTabs.getIndexOfChild(newTab)+1;//grabbing index of selected tab
+            marketGrid.filter({month: index},1);//filtering the datagrid's results based on the month tab selected
+        });
+
+        dojo.connect(store, "onSet", function(item,field,val1,value){
+
+            // console.log("store onSet is being called",field,value);
+            if((field == "longForm" || field == "shortForm") && value == 0)
+            {
+                //console.log("calling fmtMargin again");
+                //console.debug(item);
+                formatObj.fmtMargin(item);
+            }
+            pendingGrid.render();
+            //updateMarginTotal();
+            //pendingGrid._refresh(true);
+        });
+
+        /* dojo.connect(pendingGrid, "render", function(){
+
+            // console.log("pendingGrid rendered");
+        });
+         */
+        dojo.connect(dijit.byId("executeBtn"), "onClick", function(){
+            store._saveEverything = function(saveCompleteCallback, saveFailedCallback, newFileContentString){
+                //console.log("in saveEverything");
+                // console.log(newFileContentString);
+                dojo.xhrPost({
+                    url: "/data/settrade",
+                    content: {
+                        data: newFileContentString
+                    },
+                    load: saveCompleteCallback,
+                    error: saveFailedCallback
+                });
+                //saveCompleteCallback();
+            };
+            //console.log("b4 save");
+            store.save({onComplete: execute, onError: executeError});
+            //need to move to the next day, which includes refreshing all the data in the grids
+        });
+        var balanceDlg = new dijit.Dialog({
+            title: "Balance Sheet",
+            style: "width: 300px"
+        });
+        var balDiv = dojo.create("div");
+
+        var balanceStore = new dojo.data.ItemFileReadStore({url:"/data/getbalancesheet",clearOnClose:true,urlPreventCache:true});
+        var balanceLayout = [{field:"date",formatter: formatTradingDate, width:"10%",name: "Date"},
+            {field:"transaction", width:"10%",name: "Transaction Type"},
+            {field:"amount",formatter: formatPrice, width:"10%",name: "Amount"}
+        ];
+        balanceGrid = new dojox.grid.DataGrid({selectionMode:"none", style:"height: 300px; width: 100%;",
+            store:null,escapeHTMLInData:"false",id:"balGrid",structure:balanceLayout},balDiv);
+
+        var transDlg = new dijit.Dialog({
+            title: "Transaction Log",
+            style: "width: 600px"
+        });
+        var transDiv = dojo.create("div");
+
+        var transStore = new dojo.data.ItemFileReadStore({url:"/data/gettransactionlog",clearOnClose:true,urlPreventCache:true});
+        var transLayout = [{field:"date",formatter: formatTradingDate, width:"10%",name: "Date"},
+            {field:"transaction", width:"10%",name: "Transaction Type"},
+            {field:"commodity", width:"10%",name: "Commodity"},
+            {field:"month", width:"10%",name: "Month"},
+            {field:"position", width:"10%",name: "Position"},
+            {field:"quantity", width:"10%",name: "Quantity"},
+            {field:"price",formatter: formatPrice, width:"10%",name: "Price"},
+            {field:"total",formatter: formatPrice, width:"10%",name: "Total"}
+        ];
+
+
+        transGrid = new dojox.grid.DataGrid({selectionMode:"none", style:"height: 300px; width: 100%;",clientSort:false,
+            store:null,escapeHTMLInData:"false",id:"tranGrid",structure:transLayout},transDiv);
+        balbool = false;
+        transbool = false;
+        dojo.connect(dijit.byId("balanceBtn"), "onClick", function(){
+
+            if(!balbool){
+                balbool = true;
+                console.log("balbool !");
+                //balanceGrid.setStore(balanceStore);
+                balanceGrid.startup();
+                balanceDlg.set("content", balanceGrid);
+
+            }
+            balanceDlg.show();
+            balanceGrid.setStore(balanceStore);
+        });
+
+        dojo.connect(dijit.byId("transactionBtn"), "onClick", function(){
+            if(!transbool){
+                console.log("transbool !");
+                transbool = true;
+                //transGrid.setStore(transStore);
+                transGrid.startup();
+                transDlg.set("content", transGrid);
+            }
+            transDlg.show();
+            transGrid.setStore(transStore);
+
+        });
+        dojo.connect(balanceStore,"fetch",function(){
+            console.log("fetch balancestore");
+        });
+
+       
+
+
+    });//end of onLoad
+
+    //]]>
+</script>
